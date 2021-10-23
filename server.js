@@ -38,8 +38,8 @@ function empTrackPrg() {
 
 // Main Menu ------------------
 
-function startMenu() {
-  inquirer.prompt([
+async function startMenu() {
+  await inquirer.prompt([
     {
       type: "list",
       message: "What would you like to do?",
@@ -81,7 +81,7 @@ function startMenu() {
   })
 }
 
-// Main Queries -------------
+// Helping Queries -------------
 
 function viewDepartments() {
   console.clear();
@@ -117,7 +117,7 @@ function viewEmployees() {
 
 // Selecting Functions ----------------
 
-function selectRole() {
+async function selectRole() {
   let taskChosen = [];
   db.query("SELECT * FROM roles",
     function (err, response) {
@@ -129,7 +129,7 @@ function selectRole() {
   return taskChosen;
 };
 
-function selectManager() {
+async function selectManager() {
   let taskChosen = [];
   db.query("SELECT * FROM employee WHERE manager_id IS NULL",
     function (err, response) {
@@ -141,7 +141,7 @@ function selectManager() {
   return taskChosen;
 };
 
-function selectEmp() {
+async function selectEmp() {
   let taskChosen = [];
   db.query("SELECT * FROM employee",
     function (err, response) {
@@ -150,7 +150,7 @@ function selectEmp() {
         //console.log(`${response[i].id} ${response[i].first_name} ${response[i].last_name} ${response[i].role_id}`);
         taskChosen.push(`${response[i].id} ${response[i].first_name} ${response[i].last_name}`);
       };
-    //  console.log(taskChosen);
+      //  console.log(taskChosen);
     });
   return taskChosen;
 };
@@ -178,8 +178,11 @@ function addDepartment() {
   });
 };
 
-function addEmployee() {
+
+async function addEmployee() {
   console.clear();
+  const roles = await selectRole();
+  const managers = await selectManager();
   inquirer.prompt([
     {
       name: 'firstname',
@@ -211,13 +214,13 @@ function addEmployee() {
       name: "roles",
       type: "list",
       message: "Choose role: ",
-      choices: selectRole()
+      choices: roles
     },
     {
       name: "manager",
       type: "list",
       message: "Select Manager:",
-      choices: selectManager()
+      choices: managers
     }
   ]).then(function (response) {
     let roleId = response.roles;
@@ -263,7 +266,6 @@ function addRoles() {
       },
       function (err) {
         if (err) throw err;
-        //console.table(res);
         console.clear();
         startMenu();
       }
@@ -271,39 +273,67 @@ function addRoles() {
   });
 };
 
-function updateEmp() {
-  console.clear();
-  inquirer.prompt([
-    {
-      name: "role",
-      type: "list",
-      message: "Choose new role:  ",
-      choices: selectRole()
-    },
-    {
-      name: 'empId',
-      type: 'list',
-      message: 'Select employee to update role: ',
-      choices: selectEmp()
-    }
-  ]).then(function (data) {
-    let changeRoleId = data.roles;
-    let ro = parseInt(changeRoleId.charAt(0));
-    var roleId = ro
-    connection.query("Update Employee Role SET WHERE ?",
-      {
-        id: data.id
+async function updateEmp() {
 
+  function selectRoleEmp() {
+    let taskChosen = [];
+    db.query("SELECT * FROM roles",
+      function (err, response) {
+        if (err) throw err;
+        for (var i = 0; i < response.length; i++) {
+          taskChosen.push(`${response[i].id} ${response[i].title}`);
+        };
+      });
+    return taskChosen;
+  };
+
+  function selectEmpEmp() {
+    let taskChosen = [];
+    db.query("SELECT * FROM employee",
+      function (err, response) {
+        if (err) throw err;
+        for (var i = 0; i < response.length; i++) {
+          //console.log(`${response[i].id} ${response[i].first_name} ${response[i].last_name} ${response[i].role_id}`);
+          taskChosen.push(`${response[i].id} ${response[i].first_name} ${response[i].last_name}`);
+        };
+      });
+    return taskChosen;
+  };
+
+    let roles = await selectRoleEmp();
+    let employees = await selectEmpEmp();
+    console.clear();
+    await inquirer.prompt([
+      {
+        name: 'empId',
+        type: 'list',
+        message: 'Select employee to update role: ',
+        choices: employees
       },
       {
-        role_id: changeRoleId
+        name: "role",
+        type: "list",
+        message: "Choose new role:  ",
+        choices: roles
+      }
+    ]).then(function (data) {
+      let changeRoleId = data.roles;
+      let ro = parseInt(changeRoleId.charAt(0));
+      var roleId = ro
+      connection.query("Update Employee Role SET WHERE ?",
+        {
+          id: data.id
 
-      },
-      function (err) {
-        if (err) throw err
-        console.table(val)
-        startPrompt()
-      })
+        },
+        {
+          role_id: changeRoleId
 
-  });
-};
+        },
+        function (err) {
+          if (err) throw err
+          console.table(val)
+          startPrompt()
+        })
+
+    });
+  };
