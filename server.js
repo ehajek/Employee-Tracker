@@ -275,18 +275,17 @@ function updateEmp() {
   console.clear();
   inquirer.prompt([
     {
-      name: 'empId',
-      type: 'list',
-      message: 'Select employee to update role: ',
-      choices: selectEmp()
-    },
-    {
       name: "role",
       type: "list",
       message: "Choose new role:  ",
       choices: selectRole()
     },
-
+    {
+      name: 'empId',
+      type: 'list',
+      message: 'Select employee to update role: ',
+      choices: selectEmp()
+    }
   ]).then(function (data) {
     let changeRoleId = data.roles;
     let ro = parseInt(changeRoleId.charAt(0));
