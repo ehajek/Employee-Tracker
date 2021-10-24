@@ -2,9 +2,6 @@ const db = require('./db/connection');
 const inquirer = require("inquirer")
 const PORT = process.env.PORT || 3001;
 const cTable = require("console.table");
-// Formula Variables ----------------
-
-
 
 // Database/Server Fun -------------
 console.clear();
@@ -38,8 +35,8 @@ function empTrackPrg() {
 
 // Main Menu ------------------
 
-async function startMenu() {
-  await inquirer.prompt([
+function startMenu() {
+  inquirer.prompt([
     {
       type: "list",
       message: "What would you like to do?",
@@ -81,7 +78,7 @@ async function startMenu() {
   })
 }
 
-// Helping Queries -------------
+// Main Queries -------------
 
 function viewDepartments() {
   console.clear();
@@ -117,7 +114,7 @@ function viewEmployees() {
 
 // Selecting Functions ----------------
 
-async function selectRole() {
+function selectRole() {
   let taskChosen = [];
   db.query("SELECT * FROM roles",
     function (err, response) {
@@ -129,7 +126,7 @@ async function selectRole() {
   return taskChosen;
 };
 
-async function selectManager() {
+function selectManager() {
   let taskChosen = [];
   db.query("SELECT * FROM employee WHERE manager_id IS NULL",
     function (err, response) {
@@ -141,19 +138,40 @@ async function selectManager() {
   return taskChosen;
 };
 
-async function selectEmp() {
-  let taskChosen = [];
-  db.query("SELECT * FROM employee",
-    function (err, response) {
-      if (err) throw err;
-      for (var i = 0; i < response.length; i++) {
-        //console.log(`${response[i].id} ${response[i].first_name} ${response[i].last_name} ${response[i].role_id}`);
-        taskChosen.push(`${response[i].id} ${response[i].first_name} ${response[i].last_name}`);
-      };
-      //  console.log(taskChosen);
-    });
-  return taskChosen;
-};
+function selectEmp() {
+  return new Promise(function (resolve, reject) {
+    db.query('SELECT * FROM employee', (err, results) => {
+      if (err) {
+        return reject(err);
+      }
+      const choseEmp = results.map(employee => {
+        return {
+          name: `${employee.first_name} ${employee.last_name}`,
+          value: employee.id
+        };
+      })
+      resolve(choseEmp);
+    })
+  })
+}
+
+function selectRole2() {
+  return new Promise(function (resolve, reject) {
+    db.query("SELECT * FROM roles", (err, results) => {
+      if (err) {
+        return reject(err);
+      }
+      const choseRole = results.map(role => {
+        return {
+          name: `${role.id} ${role.title}`,
+          value: role.id
+        };
+      })
+      resolve(choseRole);
+    })
+  })
+}
+
 
 // Functions that do stuff -----------
 function addDepartment() {
@@ -178,11 +196,8 @@ function addDepartment() {
   });
 };
 
-
-async function addEmployee() {
+function addEmployee() {
   console.clear();
-  const roles = await selectRole();
-  const managers = await selectManager();
   inquirer.prompt([
     {
       name: 'firstname',
@@ -213,14 +228,14 @@ async function addEmployee() {
     {
       name: "roles",
       type: "list",
-      message: "Choose role: ",
-      choices: roles
+      message: "Select role: ",
+      choices: selectRole()
     },
     {
       name: "manager",
       type: "list",
       message: "Select Manager:",
-      choices: managers
+      choices: selectManager()
     }
   ]).then(function (response) {
     let roleId = response.roles;
@@ -266,6 +281,7 @@ function addRoles() {
       },
       function (err) {
         if (err) throw err;
+        //console.table(res);
         console.clear();
         startMenu();
       }
@@ -274,66 +290,38 @@ function addRoles() {
 };
 
 async function updateEmp() {
-
-  function selectRoleEmp() {
-    let taskChosen = [];
-    db.query("SELECT * FROM roles",
-      function (err, response) {
-        if (err) throw err;
-        for (var i = 0; i < response.length; i++) {
-          taskChosen.push(`${response[i].id} ${response[i].title}`);
-        };
-      });
-    return taskChosen;
-  };
-
-  function selectEmpEmp() {
-    let taskChosen = [];
-    db.query("SELECT * FROM employee",
-      function (err, response) {
-        if (err) throw err;
-        for (var i = 0; i < response.length; i++) {
-          //console.log(`${response[i].id} ${response[i].first_name} ${response[i].last_name} ${response[i].role_id}`);
-          taskChosen.push(`${response[i].id} ${response[i].first_name} ${response[i].last_name}`);
-        };
-      });
-    return taskChosen;
-  };
-
-    let roles = await selectRoleEmp();
-    let employees = await selectEmpEmp();
-    console.clear();
-    await inquirer.prompt([
+  console.clear();
+  let employee;
+  let role;
+  
+  await selectEmp().then((empChoice) => {
+    inquirer.prompt([
       {
-        name: 'empId',
+        name: 'upEmp',
         type: 'list',
-        message: 'Select employee to update role: ',
-        choices: employees
-      },
-      {
-        name: "role",
-        type: "list",
-        message: "Choose new role:  ",
-        choices: roles
+        message: 'Select employee to update',
+        choices: empChoice
       }
-    ]).then(function (data) {
-      let changeRoleId = data.roles;
-      let ro = parseInt(changeRoleId.charAt(0));
-      var roleId = ro
-      connection.query("Update Employee Role SET WHERE ?",
-        {
-          id: data.id
-
-        },
-        {
-          role_id: changeRoleId
-
-        },
-        function (err) {
-          if (err) throw err
-          console.table(val)
-          startPrompt()
+    ]).then((reponse) => {
+      employee = reponse.upEmp;
+      selectRole2().then((roleChoice) => {
+        inquirer.prompt([
+          {
+            name: 'roleUpdated',
+            type: 'list',
+            message: 'Select New role: ',
+            choices: roleChoice
+          }
+        ]).then((data) => {
+          role = data.roleUpdated;
+          db.query('UPDATE employee SET ? WHERE ?', [{ role_id: role }, { id: employee }], (err, res) => {
+            if (err) {
+              throw err
+            }
+            startMenu();
+          })
         })
-
-    });
-  };
+      })
+    })
+  })
+};
