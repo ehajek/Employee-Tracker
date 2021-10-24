@@ -1,8 +1,7 @@
 # Employee-Tracker
 
-
-
-
+This is a workup of the Employee-Tracker. <br> 
+The project plan is to follow the following criteria; 
 
     GIVEN a command-line application that accepts user input
     WHEN I start the application
@@ -21,3 +20,18 @@
     THEN I am prompted to enter the employee’s first name, last name, role, and manager and that employee is added to the database
     WHEN I choose to update an employee role
     THEN I am prompted to select an employee to update and their new role and this information is updated in the database 
+
+## Walkthough Video
+
+The website mockup image loaction is "./assets/EmpTrackWalkThrough.mp4" 
+
+## GitHub Repository 
+
+The name of the Employee Tracker GitHub repository is "Employee-Tracker" at the URL of "https://github.com/ehajek/Employee-Tracker". 
+
+
+--- 
+
+Eddie Hajek <br>
+ehajek@outlook.com <br> 
+2021.10.23 <br>

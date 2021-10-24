@@ -172,6 +172,23 @@ function selectRole2() {
   })
 }
 
+function selectDpt() {
+  return new Promise(function (resolve, reject) {
+    db.query("SELECT department.id, department.dptname FROM department", (err, results) => {
+      if (err) {
+        return reject(err);
+      }
+      const choseDept = results.map(dept => {
+        return {
+          name: `${dept.id} ${dept.dptname}`,
+          value: dept.id
+        };
+      })
+      resolve(choseDept);
+    })
+  })
+}
+
 
 // Functions that do stuff -----------
 function addDepartment() {
@@ -259,41 +276,49 @@ function addEmployee() {
 };
 
 
-function addRoles() {
+async function addRoles() {
   console.clear();
-  inquirer.prompt([
-    {
-      name: "newRoleTitle",
-      type: "input",
-      message: "New Title of Role: "
-    },
-    {
-      name: "newRoleSalary",
-      type: "input",
-      message: "Salary of Role: "
-    }
-  ]).then(function (response) {
-    db.query(
-      "INSERT INTO roles SET ?",
+
+  await selectDpt().then((deptChoice) => {
+    inquirer.prompt([
       {
-        title: response.newRoleTitle,
-        salary: response.newRoleSalary,
+        name: "newRoleTitle",
+        type: "input",
+        message: "New Title of Role: "
       },
-      function (err) {
-        if (err) throw err;
-        //console.table(res);
-        console.clear();
-        startMenu();
+      {
+        name: "newRoleSalary",
+        type: "input",
+        message: "Salary of Role: "
+      },
+      {
+        name: "newDeptId",
+        type: "list",
+        choices: deptChoice
       }
-    );
-  });
+    ]).then(function (data) {
+      db.query(
+        "INSERT INTO roles SET ?",
+        {
+          title: data.newRoleTitle,
+          salary: data.newRoleSalary,
+          department_id: data.newDeptId
+        },
+        function (err) {
+          if (err) throw err;
+          console.clear();
+          startMenu();
+        }
+      )
+    })
+  })
 };
 
 async function updateEmp() {
   console.clear();
   let employee;
   let role;
-  
+
   await selectEmp().then((empChoice) => {
     inquirer.prompt([
       {
